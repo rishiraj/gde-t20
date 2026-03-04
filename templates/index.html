@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IND vs ENG - T20 World Cup Predictor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --grass-green: #2E8B57;
+            --dark-green: #1f633d;
+            --ball-red: #D32F2F;
+            --wood-brown: #8D6E63;
+            --pitch-color: #E6D0B3;
+            --bg-color: #f4f6f8;
+            --text-main: #2C3E50;
+            --white: #FFFFFF;
+        }
+
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* --- Header: Grass Theme --- */
+        .stadium-header {
+            background: linear-gradient(135deg, var(--grass-green) 0%, var(--dark-green) 100%);
+            color: var(--white);
+            padding: 15px 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 5px solid var(--pitch-color);
+        }
+
+        .header-title h1 {
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            font-size: 1.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Bouncing Ball Animation */
+        .cricket-ball-loader {
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle at 6px 6px, #ff4e50, #8b0000);
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 2px 5px 5px rgba(0,0,0,0.2);
+            animation: bounce 0.6s infinite alternate cubic-bezier(0.5, 0.05, 1, 0.5);
+            border: 1px solid rgba(255,255,255,0.4);
+        }
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-15px); }
+        }
+
+        .live-score-badge {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            text-align: right;
+        }
+
+        .live-score-badge p { margin: 0; }
+        .live-status { font-size: 0.9rem; color: #ffeb3b; font-weight: 600; animation: pulse 2s infinite; }
+        .score-text { font-size: 1.3rem; font-family: 'Montserrat', sans-serif; font-weight: bold; }
+        
+        @keyframes pulse { 0% {opacity: 1;} 50% {opacity: 0.6;} 100% {opacity: 1;} }
+
+        /* --- Dashboard Grid --- */
+        .container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 15px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+            border-top: 4px solid var(--wood-brown);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card.ai-card { border-top-color: var(--grass-green); }
+        .card.friends-card { border-top-color: var(--ball-red); }
+
+        .card h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.2rem;
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        /* --- Chart Containers (Fixes Overflow) --- */
+        .charts-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .chart-wrapper {
+            flex: 1;
+            min-width: 150px;
+            position: relative;
+            height: 220px; /* Crucial: Locks the chart height */
+            width: 100%;
+        }
+
+        /* --- Forms & Tables --- */
+        .form-group { margin-bottom: 12px; }
+        input, select, button {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            background-color: #fafafa;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--grass-green); background: #fff;}
+
+        button {
+            background: var(--wood-brown);
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: bold;
+            text-transform: uppercase;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        button:hover { background: #6d4c41; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        button:active { transform: translateY(0); }
+
+        /* Bat swing animation class added via JS */
+        .bat-swing { animation: swing 0.5s ease-in-out; background: var(--grass-green) !important; }
+        @keyframes swing { 0% { transform: rotate(0deg); } 50% { transform: rotate(-10deg) scale(1.05); } 100% { transform: rotate(0deg); } }
+
+        .table-container { flex-grow: 1; overflow-y: auto; max-height: 280px; border-radius: 6px; border: 1px solid #eee; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { background: var(--pitch-color); color: var(--wood-brown); padding: 10px; position: sticky; top: 0; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #eee; }
+        tr:hover { background-color: #f9f9f9; }
+
+        .ai-status { font-size: 0.8rem; color: #7f8c8d; font-style: italic; }
+        .ai-analysis-text { background: #f0f7f4; padding: 10px; border-left: 4px solid var(--grass-green); font-size: 0.9rem; margin-bottom: 15px; border-radius: 4px; }
+
+        @media(max-width: 768px) {
+            .stadium-header { flex-direction: column; text-align: center; gap: 10px; }
+            .live-score-badge { text-align: center; width: 100%; }
+            .charts-row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <header class="stadium-header">
+        <div class="header-title">
+            <div class="cricket-ball-loader"></div>
+            <h1>T20 Match Center</h1>
+        </div>
+        <div class="live-score-badge" id="live-match-container">
+            <p class="live-status">Loading Live Match Data...</p>
+        </div>
+    </header>
+
+    <div class="container">
+        
+        <!-- AI Card -->
+        <div class="card ai-card">
+            <h2>
+                <span>🤖 AI Expert Analysis</span>
+                <span class="ai-status" id="ai-timer">Updating in 300s</span>
+            </h2>
+            <div class="ai-analysis-text" id="ai-analysis">"Waiting for Match Data context to generate insights..."</div>
+            
+            <div class="charts-row">
+                <div class="chart-wrapper">
+                    <canvas id="winProbChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="scoreChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Predictions Charts Card (NEW) -->
+        <div class="card friends-card">
+            <h2>📊 Friends' Consensus</h2>
+            <p style="font-size: 0.85rem; color: #666; margin-top:0;">Aggregated data from your group's predictions</p>
+            <div class="charts-row">
+                <div class="chart-wrapper">
+                    <canvas id="userWinChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="userScoreChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Card -->
+        <div class="card">
+            <h2>🏏 Make Your Prediction</h2>
+            <form id="predictionForm">
+                <div class="form-group">
+                    <input type="text" id="p_name" placeholder="Your Name (e.g., Rahul)" required>
+                </div>
+                <div class="form-group">
+                    <select id="p_winner" required>
+                        <option value="" disabled selected>Who will win?</option>
+                        <option value="India">India</option>
+                        <option value="England">England</option>
+                    </select>
+                </div>
+                <div class="charts-row" style="gap: 10px;">
+                    <input type="number" id="p_ind_score" placeholder="IND Score" required>
+                    <input type="number" id="p_eng_score" placeholder="ENG Score" required>
+                </div>
+                <button type="submit" id="submitBtn">Hit for Six! (Submit)</button>
+            </form>
+            <div id="form-message" style="color: var(--grass-green); font-weight: bold; margin-top: 10px; text-align: center;"></div>
+        </div>
+
+        <!-- Leaderboard Card -->
+        <div class="card">
+            <h2>👥 Leaderboard</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Winner</th>
+                            <th>IND</th>
+                            <th>ENG</th>
+                        </tr>
+                    </thead>
+                    <tbody id="friends-table-body">
+                        <tr><td colspan="4" style="text-align: center;">No predictions yet!</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Chart Instances
+        let charts = { aiWin: null, aiScore: null, userWin: null, userScore: null };
+        let aiCountdown = 0;
+
+        // Colors
+        const colInd = '#1E88E5'; // India Blue
+        const colEng = '#E53935'; // England Red
+
+        // Common Chart Options to strictly prevent overflowing
+        const chartOptions = (title) => ({
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, font: {size: 10} } },
+                title: { display: true, text: title, font: {size: 12} }
+            }
+        });
+
+        // Fetch Live Match Data for Header
+        async function fetchMatchData() {
+            try {
+                const res = await fetch('/api/match-data');
+                const data = await res.json();
+                
+                let html = `<p class="live-status">${data.status}</p>`;
+                if (data.score && data.score.length > 0) {
+                    let scoreLine = data.score.map(inn => `${inn.inning.split(' ')[0]}: ${inn.r}/${inn.w}`).join(' &nbsp;|&nbsp; ');
+                    html += `<p class="score-text">${scoreLine}</p>`;
+                } else {
+                    html += `<p class="score-text">Match not started</p>`;
+                }
+                
+                if (data.isMock) {
+                    html += `<p style="color:#ffcc00; font-size: 0.75rem; margin-top:2px;">(Simulated Pre-Match Data)</p>`;
+                }
+                
+                document.getElementById('live-match-container').innerHTML = html;
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Fetch AI Predictions
+        async function fetchAIPredictions() {
+            try {
+                const res = await fetch('/api/ai-predictions');
+                const payload = await res.json();
+                const data = payload.predictions;
+                
+                aiCountdown = payload.next_update_in_seconds;
+                document.getElementById('ai-analysis').innerText = `"${data.analysis_summary}"`;
+
+                // AI Win Prob Doughnut
+                const ctxWin = document.getElementById('winProbChart').getContext('2d');
+                if(charts.aiWin) charts.aiWin.destroy();
+                charts.aiWin = new Chart(ctxWin, {
+                    type: 'doughnut',
+                    data: { labels: ['India', 'England'], datasets: [{ data: [data.win_probability_india, data.win_probability_england], backgroundColor: [colInd, colEng] }] },
+                    options: chartOptions('Win Probability (%)')
+                });
+
+                // AI Score Bar
+                const ctxScore = document.getElementById('scoreChart').getContext('2d');
+                if(charts.aiScore) charts.aiScore.destroy();
+                charts.aiScore = new Chart(ctxScore, {
+                    type: 'bar',
+                    data: { labels: ['India', 'England'], datasets: [{ label: 'Score', data: [data.projected_score_india, data.projected_score_england], backgroundColor: [colInd, colEng] }] },
+                    options: chartOptions('Projected Score')
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        // Timer
+        setInterval(() => {
+            if (aiCountdown > 0) {
+                aiCountdown--;
+                document.getElementById('ai-timer').innerText = `Refreshes in ${aiCountdown}s`;
+                if(aiCountdown === 0) fetchAIPredictions();
+            }
+        }, 1000);
+
+        // Fetch & Process Friends Predictions
+        async function fetchFriendsPredictions() {
+            try {
+                const res = await fetch('/api/predictions');
+                const data = await res.json();
+                
+                const tbody = document.getElementById('friends-table-body');
+                
+                if(data.length === 0) return; // leave default empty state
+                
+                tbody.innerHTML = '';
+                
+                let indVotes = 0, engVotes = 0;
+                let totalIndScore = 0, totalEngScore = 0;
+
+                data.forEach(p => {
+                    // Populate Table
+                    tbody.innerHTML += `<tr>
+                        <td><b>${p.name}</b></td>
+                        <td>${p.predicted_winner}</td>
+                        <td>${p.predicted_ind_score}</td>
+                        <td>${p.predicted_eng_score}</td>
+                    </tr>`;
+
+                    // Calculate Data for User Graphs
+                    if(p.predicted_winner === "India") indVotes++; else engVotes++;
+                    totalIndScore += parseInt(p.predicted_ind_score) || 0;
+                    totalEngScore += parseInt(p.predicted_eng_score) || 0;
+                });
+
+                // Render User Charts
+                renderUserCharts(indVotes, engVotes, totalIndScore, totalEngScore, data.length);
+
+            } catch(err) { console.error(err); }
+        }
+
+        function renderUserCharts(indV, engV, totIndS, totEngS, count) {
+            // User Win Votes Pie Chart
+            const ctxUWin = document.getElementById('userWinChart').getContext('2d');
+            if(charts.userWin) charts.userWin.destroy();
+            charts.userWin = new Chart(ctxUWin, {
+                type: 'pie',
+                data: { labels: ['India', 'England'], datasets: [{ data: [indV, engV], backgroundColor: [colInd, colEng] }] },
+                options: chartOptions(`Group Votes (${count} total)`)
+            });
+
+            // User Avg Score Bar Chart
+            const avgInd = count > 0 ? Math.round(totIndS / count) : 0;
+            const avgEng = count > 0 ? Math.round(totEngS / count) : 0;
+            
+            const ctxUScore = document.getElementById('userScoreChart').getContext('2d');
+            if(charts.userScore) charts.userScore.destroy();
+            charts.userScore = new Chart(ctxUScore, {
+                type: 'bar',
+                data: { labels: ['India', 'England'], datasets: [{ label: 'Avg Score', data: [avgInd, avgEng], backgroundColor: [colInd, colEng] }] },
+                options: chartOptions('Group Avg Score')
+            });
+        }
+
+        // Form Submission
+        document.getElementById('predictionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.classList.add('bat-swing');
+            btn.innerText = "Shot! 🏏";
+
+            const payload = {
+                name: document.getElementById('p_name').value,
+                predicted_winner: document.getElementById('p_winner').value,
+                predicted_ind_score: document.getElementById('p_ind_score').value,
+                predicted_eng_score: document.getElementById('p_eng_score').value
+            };
+
+            await fetch('/api/predictions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            document.getElementById('form-message').innerText = "Awesome! Prediction Added.";
+            setTimeout(() => {
+                document.getElementById('form-message').innerText = "";
+                btn.classList.remove('bat-swing');
+                btn.innerText = "Hit for Six! (Submit)";
+            }, 2000);
+            
+            document.getElementById('predictionForm').reset();
+            fetchFriendsPredictions();
+        });
+
+        // Init
+        fetchMatchData();
+        fetchAIPredictions();
+        fetchFriendsPredictions();
+
+        setInterval(fetchMatchData, 30000); // Live score every 30s
+        setInterval(fetchFriendsPredictions, 10000); // Friends predictions every 10s
+    </script>
+</body>
+</html>
