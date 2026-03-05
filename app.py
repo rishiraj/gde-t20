@@ -1,7 +1,7 @@
 import os
 import json
-import time
 import requests
+import time
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 from google import genai
@@ -11,68 +11,71 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Global variables to handle friends' predictions and AI caching
-user_predictions = []
-ai_cache = {
-    "timestamp": 0,
-    "data": None
+# --- IN-MEMORY DATABASE ---
+user_predictions = {}
+latest_ai_prediction = None
+last_ai_update_time = 0
+
+# --- SQUAD LISTS ---
+SQUADS = {
+    "India": [
+        "Suryakumar Yadav", "Sanju Samson", "Axar Patel", "Kuldeep Yadav", "Hardik Pandya", 
+        "Jasprit Bumrah", "Ishan Kishan", "Rinku Singh", "Mohammed Siraj", "Washington Sundar", 
+        "Shivam Dube", "Abhishek Sharma", "Varun Chakaravarthy", "Arshdeep Singh", "Tilak Varma"
+    ],
+    "England": [
+        "Liam Dawson", "Adil Rashid", "Jos Buttler", "Jamie Overton", "Ben Duckett", 
+        "Jofra Archer", "Luke Wood", "Sam Curran", "Phil Salt", "Josh Tongue", 
+        "Harry Brook", "Tom Banton", "Will Jacks", "Jacob Bethell", "Rehan Ahmed"
+    ]
 }
 
-CRICAPI_KEY = os.environ.get("CRICAPI_KEY")
+# --- CRICAPI INTEGRATION ---
+def get_mock_match():
+    return {
+        "name": "India vs England, Final",
+        "matchType": "t20",
+        "status": "India won the toss and elected to bat",
+        "venue": "Kensington Oval, Bridgetown",
+        "teams": ["India", "England"],
+        "score": [
+            {"inning": "India Inning 1", "r": 185, "w": 4, "o": 18.3}
+        ]
+    }
 
-def get_live_match_data():
-    """Fetches real data from CricAPI. Falls back to mock data if IND vs ENG is not live yet."""
+def get_live_score():
+    api_key = os.environ.get("CRICAPI_KEY")
+    url = f"https://api.cricapi.com/v1/currentMatches?apikey={api_key}&offset=0"
     try:
-        url = f"https://api.cricapi.com/v1/currentMatches?apikey={CRICAPI_KEY}&offset=0"
-        response = requests.get(url).json()
-        
-        # Search for India vs England match
-        if response.get("status") == "success":
-            for match in response.get("data", []):
+        res = requests.get(url).json()
+        if res.get("status") == "success":
+            for match in res.get("data", []):
                 teams = match.get("teams", [])
                 if "India" in teams and "England" in teams:
                     return match
     except Exception as e:
-        print("Error fetching real match data:", e)
+        print(f"CricAPI Error: {e}")
+        
+    return get_mock_match()
 
-    # MOCK DATA: Used to test the app before the match actually starts
-    return {
-        "name": "India vs England, Semi-Final - T20 World Cup",
-        "matchType": "t20",
-        "status": "India won the toss and elected to bat",
-        "venue": "World Cup Stadium",
-        "teams": ["India", "England"],
-        "score": [
-            {"inning": "India Inning 1", "r": 168, "w": 3, "o": 15.4}
-        ],
-        "isMock": True
-    }
-
-def generate_ai_predictions(match_data):
-    """Calls Gemini API with the context to make live predictions"""
+# --- GEMINI AI INTEGRATION ---
+def generate_ai_prediction(live_data):
     client = genai.Client(
         api_key=os.environ.get("GEMINI_API_KEY"),
     )
-
+    
+    context = json.dumps(live_data)
     model = "gemini-3.1-pro-preview"
     
-    # Passing context to the AI
-    prompt_text = f"""
-    You are an expert cricket AI analyst. Look at this live/mock data for India vs England T20 match:
-    {json.dumps(match_data)}
-    
-    Take into account historical context, T20 World Cup pressure, pitch conditions, and current momentum.
-    Make highly accurate numerical predictions for the final outcome.
-    """
-
     contents = [
         types.Content(
             role="user",
-            parts=[types.Part.from_text(text=prompt_text)],
+            parts=[
+                types.Part.from_text(text=f"Live Match Context: {context}\n\nBased on historical records, current live scores, and T20 dynamics for India vs England, predict the final stats. Return a JSON structure ONLY with keys: 'ind_win_prob' (int), 'eng_win_prob' (int), 'ind_projected_score' (int), 'eng_projected_score' (int)."),
+            ],
         ),
     ]
     
-    # Configured exactly as requested, but schema expanded for charts
     generate_content_config = types.GenerateContentConfig(
         thinking_config=types.ThinkingConfig(
             thinking_level="HIGH",
@@ -81,16 +84,13 @@ def generate_ai_predictions(match_data):
         response_schema=genai.types.Schema(
             type=genai.types.Type.OBJECT,
             properties={
-                "win_probability_india": genai.types.Schema(type=genai.types.Type.INTEGER),
-                "win_probability_england": genai.types.Schema(type=genai.types.Type.INTEGER),
-                "projected_score_india": genai.types.Schema(type=genai.types.Type.INTEGER),
-                "projected_score_england": genai.types.Schema(type=genai.types.Type.INTEGER),
-                "total_sixes_predicted": genai.types.Schema(type=genai.types.Type.INTEGER),
-                "analysis_summary": genai.types.Schema(type=genai.types.Type.STRING),
+                "response": genai.types.Schema(
+                    type=genai.types.Type.STRING,
+                ),
             },
         ),
         system_instruction=[
-            types.Part.from_text(text="You are an expert T20 Cricket Analyst. Always return valid JSON matching the schema."),
+            types.Part.from_text(text="You are an expert cricket analyst AI. Provide accurate predictions in valid JSON format inside the response string."),
         ],
     )
 
@@ -100,57 +100,74 @@ def generate_ai_predictions(match_data):
             contents=contents,
             config=generate_content_config,
         )
-        return json.loads(response.text)
+        
+        outer_json = json.loads(response.text)
+        inner_string = outer_json.get("response", "{}")
+        inner_string = inner_string.replace('```json', '').replace('```', '').strip()
+        
+        return json.loads(inner_string)
     except Exception as e:
-        print("Gemini API Error:", e)
+        print(f"Gemini AI Error: {e}")
         return {
-            "win_probability_india": 55, "win_probability_england": 45,
-            "projected_score_india": 190, "projected_score_england": 180,
-            "total_sixes_predicted": 14, "analysis_summary": "API Error: Using fallback predictions."
+            "ind_win_prob": 55, "eng_win_prob": 45, 
+            "ind_projected_score": 195, "eng_projected_score": 185
         }
 
-@app.route('/')
+@app.route("/")
 def index():
-    return render_template('index.html')
+    return render_template("index.html", squads=SQUADS)
 
-@app.route('/api/match-data')
-def api_match_data():
-    data = get_live_match_data()
-    return jsonify(data)
+@app.route("/api/live_match")
+def live_match():
+    return jsonify(get_live_score())
 
-@app.route('/api/ai-predictions')
-def api_ai_predictions():
-    global ai_cache
+@app.route("/api/ai_predictions")
+def ai_predictions():
+    global latest_ai_prediction, last_ai_update_time
     current_time = time.time()
     
-    # Only update AI predictions every 5 minutes (300 seconds)
-    if current_time - ai_cache["timestamp"] > 300 or ai_cache["data"] is None:
-        print("Generating new AI predictions...")
-        match_data = get_live_match_data()
-        predictions = generate_ai_predictions(match_data)
-        ai_cache["timestamp"] = current_time
-        ai_cache["data"] = predictions
+    if not latest_ai_prediction or (current_time - last_ai_update_time) > 300:
+        live_data = get_live_score()
+        latest_ai_prediction = generate_ai_prediction(live_data)
+        last_ai_update_time = current_time
         
+    return jsonify(latest_ai_prediction)
+
+@app.route("/api/predict", methods=["POST"])
+def submit_prediction():
+    data = request.json
+    username = data.get("username", "").strip()
+    if not username:
+        return jsonify({"error": "Username required"}), 400
+        
+    user_predictions[username] = {
+        "winner": data.get("winner"),
+        "motm": data.get("motm"),
+        "most_runs": data.get("most_runs"),
+        "most_wickets": data.get("most_wickets"),
+        "most_catches": data.get("most_catches")
+    }
+    return jsonify({"message": "Prediction saved successfully!"})
+
+@app.route("/api/leaderboard")
+def leaderboard():
+    # Group the votes and include the usernames of the voters
+    stats = {
+        "winner": {}, "motm": {}, "most_runs": {}, "most_wickets": {}, "most_catches": {}
+    }
+    
+    for user, preds in user_predictions.items():
+        for category, selection in preds.items():
+            if selection:
+                if selection not in stats[category]:
+                    stats[category][selection] = {"count": 0, "voters": []}
+                stats[category][selection]["count"] += 1
+                stats[category][selection]["voters"].append(user)
+                
     return jsonify({
-        "predictions": ai_cache["data"], 
-        "next_update_in_seconds": int(300 - (current_time - ai_cache["timestamp"]))
+        "predictions": user_predictions,
+        "statistics": stats
     })
 
-@app.route('/api/predictions', methods=['GET', 'POST'])
-def handle_predictions():
-    if request.method == 'POST':
-        data = request.json
-        user_predictions.append({
-            "name": data.get("name", "Unknown"),
-            "predicted_winner": data.get("predicted_winner"),
-            "predicted_ind_score": data.get("predicted_ind_score"),
-            "predicted_eng_score": data.get("predicted_eng_score")
-        })
-        return jsonify({"status": "success", "message": "Prediction saved!"})
-    
-    # GET request returns all friends' predictions
-    return jsonify(user_predictions)
-
-if __name__ == '__main__':
-    # Make sure to run inside the folder where the "templates" directory exists.
+if __name__ == "__main__":
     app.run(debug=True, port=5000)
