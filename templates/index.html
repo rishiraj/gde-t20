@@ -3,455 +3,457 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IND vs ENG - T20 World Cup Predictor</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <title>IND vs ENG - Live Predictor</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        /* Google Brand Colors */
         :root {
-            --grass-green: #2E8B57;
-            --dark-green: #1f633d;
-            --ball-red: #D32F2F;
-            --wood-brown: #8D6E63;
-            --pitch-color: #E6D0B3;
-            --bg-color: #f4f6f8;
-            --text-main: #2C3E50;
-            --white: #FFFFFF;
+            --g-blue: #4285F4;
+            --g-red: #EA4335;
+            --g-yellow: #FBBC05;
+            --g-green: #34A853;
+            --g-bg: #f8f9fa;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
         }
 
         body {
-            font-family: 'Open Sans', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
+            background-color: var(--g-bg);
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
+            overflow-x: hidden;
+            padding-bottom: 80px; 
         }
 
-        /* --- Header: Grass Theme --- */
-        .stadium-header {
-            background: linear-gradient(135deg, var(--grass-green) 0%, var(--dark-green) 100%);
-            color: var(--white);
-            padding: 15px 20px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 5px solid var(--pitch-color);
-        }
-
-        .header-title h1 {
-            font-family: 'Montserrat', sans-serif;
-            margin: 0;
-            font-size: 1.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* Bouncing Ball Animation */
-        .cricket-ball-loader {
-            width: 20px;
-            height: 20px;
-            background: radial-gradient(circle at 6px 6px, #ff4e50, #8b0000);
-            border-radius: 50%;
-            display: inline-block;
-            box-shadow: 2px 5px 5px rgba(0,0,0,0.2);
-            animation: bounce 0.6s infinite alternate cubic-bezier(0.5, 0.05, 1, 0.5);
-            border: 1px solid rgba(255,255,255,0.4);
-        }
-        @keyframes bounce {
-            from { transform: translateY(0); }
-            to { transform: translateY(-15px); }
-        }
-
-        .live-score-badge {
-            background: rgba(255, 255, 255, 0.15);
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            text-align: right;
-        }
-
-        .live-score-badge p { margin: 0; }
-        .live-status { font-size: 0.9rem; color: #ffeb3b; font-weight: 600; animation: pulse 2s infinite; }
-        .score-text { font-size: 1.3rem; font-family: 'Montserrat', sans-serif; font-weight: bold; }
-        
-        @keyframes pulse { 0% {opacity: 1;} 50% {opacity: 0.6;} 100% {opacity: 1;} }
-
-        /* --- Dashboard Grid --- */
-        .container {
-            max-width: 1400px;
-            margin: 20px auto;
-            padding: 0 15px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 20px;
-        }
-
-        .card {
-            background: var(--white);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.06);
-            border-top: 4px solid var(--wood-brown);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .card.ai-card { border-top-color: var(--grass-green); }
-        .card.friends-card { border-top-color: var(--ball-red); }
-
-        .card h2 {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.2rem;
-            margin-top: 0;
-            margin-bottom: 15px;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
-        }
-
-        /* --- Chart Containers (Fixes Overflow) --- */
-        .charts-row {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        .chart-wrapper {
-            flex: 1;
-            min-width: 150px;
-            position: relative;
-            height: 220px; /* Crucial: Locks the chart height */
-            width: 100%;
-        }
-
-        /* --- Forms & Tables --- */
-        .form-group { margin-bottom: 12px; }
-        input, select, button {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-family: inherit;
-            font-size: 0.95rem;
-            box-sizing: border-box;
-            background-color: #fafafa;
-        }
-        input:focus, select:focus { outline: none; border-color: var(--grass-green); background: #fff;}
-
-        button {
-            background: var(--wood-brown);
+        .header {
+            background: linear-gradient(135deg, #1a237e, var(--g-blue));
             color: white;
-            font-family: 'Montserrat', sans-serif;
-            font-weight: bold;
-            text-transform: uppercase;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 10px;
+            text-align: center;
+            padding: 30px 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             position: relative;
             overflow: hidden;
         }
-        button:hover { background: #6d4c41; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
-        button:active { transform: translateY(0); }
 
-        /* Bat swing animation class added via JS */
-        .bat-swing { animation: swing 0.5s ease-in-out; background: var(--grass-green) !important; }
-        @keyframes swing { 0% { transform: rotate(0deg); } 50% { transform: rotate(-10deg) scale(1.05); } 100% { transform: rotate(0deg); } }
-
-        .table-container { flex-grow: 1; overflow-y: auto; max-height: 280px; border-radius: 6px; border: 1px solid #eee; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        th { background: var(--pitch-color); color: var(--wood-brown); padding: 10px; position: sticky; top: 0; text-align: left; }
-        td { padding: 10px; border-bottom: 1px solid #eee; }
-        tr:hover { background-color: #f9f9f9; }
-
-        .ai-status { font-size: 0.8rem; color: #7f8c8d; font-style: italic; }
-        .ai-analysis-text { background: #f0f7f4; padding: 10px; border-left: 4px solid var(--grass-green); font-size: 0.9rem; margin-bottom: 15px; border-radius: 4px; }
-
-        @media(max-width: 768px) {
-            .stadium-header { flex-direction: column; text-align: center; gap: 10px; }
-            .live-score-badge { text-align: center; width: 100%; }
-            .charts-row { flex-direction: column; }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 2;
         }
+
+        .container {
+            max-width: 1100px;
+            margin: 20px auto;
+            padding: 0 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media(max-width: 800px) {
+            .container { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-top: 5px solid var(--g-blue);
+            position: relative;
+        }
+        
+        .card:nth-child(2) { border-color: var(--g-red); }
+        .card:nth-child(3) { border-color: var(--g-yellow); }
+        .card:nth-child(4) { border-color: var(--g-green); }
+
+        .live-score-banner {
+            text-align: center;
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px auto;
+            max-width: 1100px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-left: 8px solid var(--g-green);
+        }
+
+        .score-text {
+            font-size: 2em;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .status-text { color: var(--g-red); font-weight: 500;}
+
+        /* Form Styling */
+        label { font-weight: 500; margin-top: 10px; display: block; color: #444;}
+        select, input {
+            width: 100%; padding: 10px; margin-top: 5px;
+            border: 1px solid #ddd; border-radius: 6px;
+            font-size: 1em; outline: none; transition: 0.3s;
+        }
+        select:focus, input:focus { border-color: var(--g-blue); box-shadow: 0 0 5px rgba(66, 133, 244, 0.4);}
+
+        button {
+            width: 100%; padding: 12px; margin-top: 20px;
+            background: var(--g-blue); color: white;
+            border: none; border-radius: 6px; font-size: 1.1em;
+            font-weight: 700; cursor: pointer; transition: 0.3s;
+        }
+        button:hover { background: #3367d6; }
+
+        .stat-bar {
+            background: #e0e0e0; border-radius: 5px; margin-top: 5px; height: 10px; overflow: hidden;
+        }
+        .stat-fill {
+            background: var(--g-blue); height: 100%; transition: width 0.5s;
+        }
+
+        .prediction-item { 
+            margin-bottom: 20px; 
+            background: white; 
+            padding: 10px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid #eee;
+        }
+        
+        .category-box {
+            flex: 1; 
+            min-width: 250px; 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 8px; 
+            border: 1px solid #ddd;
+        }
+
+        /* Animations */
+        .grass {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 40px;
+            background: repeating-linear-gradient(45deg, #34A853, #34A853 10px, #2d9448 10px, #2d9448 20px);
+            z-index: 10; border-top: 3px solid #247539;
+        }
+
+        .cricket-ball {
+            position: fixed; bottom: 25px; left: -50px;
+            width: 25px; height: 25px; background: radial-gradient(circle, #ff4c4c, #cc0000);
+            border-radius: 50%; border: 2px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            animation: bowl 7s linear infinite; z-index: 11;
+        }
+
+        .cricket-ball::after {
+            content: ''; position: absolute; top: 0; left: 50%;
+            width: 2px; height: 100%; background: white; transform: translateX(-50%);
+        }
+
+        @keyframes bowl {
+            0% { transform: translateX(-50px) rotate(0deg); }
+            100% { transform: translateX(110vw) rotate(1440deg); }
+        }
+
+        .bat-icon {
+            position: absolute; top: -10px; right: 20px; font-size: 40px;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-origin: bottom center;
+        }
+        .card:hover .bat-icon { transform: rotate(-45deg); }
+
+        .stadium-light {
+            position: absolute; background: white; border-radius: 50%;
+            filter: blur(4px); opacity: 0; animation: flash 3s infinite alternate;
+        }
+        @keyframes flash { 0% { opacity: 0; } 100% { opacity: 0.6; } }
+
     </style>
 </head>
 <body>
 
-    <!-- Header Section -->
-    <header class="stadium-header">
-        <div class="header-title">
-            <div class="cricket-ball-loader"></div>
-            <h1>T20 Match Center</h1>
-        </div>
-        <div class="live-score-badge" id="live-match-container">
-            <p class="live-status">Loading Live Match Data...</p>
-        </div>
-    </header>
+    <div class="header">
+        <h1>🏆 World Cup Predictor: IND vs ENG</h1>
+        <p style="margin-top: 10px; font-size: 1.1em; z-index: 2; position: relative;">Make your predictions with friends & AI</p>
+        <script>
+            for(let i=0; i<15; i++){
+                let light = document.createElement('div');
+                light.className = 'stadium-light';
+                light.style.width = Math.random()*20 + 'px';
+                light.style.height = light.style.width;
+                light.style.top = Math.random()*100 + '%';
+                light.style.left = Math.random()*100 + '%';
+                light.style.animationDelay = Math.random()*2 + 's';
+                document.querySelector('.header').appendChild(light);
+            }
+        </script>
+    </div>
+
+    <!-- Live Score Banner -->
+    <div class="live-score-banner" id="liveScoreBanner">
+        <h3 id="matchName" style="margin: 0; color: var(--g-blue);">Loading Match...</h3>
+        <div class="score-text" id="matchScore">--</div>
+        <div class="status-text" id="matchStatus">Connecting to live feed...</div>
+    </div>
 
     <div class="container">
         
-        <!-- AI Card -->
-        <div class="card ai-card">
-            <h2>
-                <span>🤖 AI Expert Analysis</span>
-                <span class="ai-status" id="ai-timer">Updating in 300s</span>
-            </h2>
-            <div class="ai-analysis-text" id="ai-analysis">"Waiting for Match Data context to generate insights..."</div>
+        <!-- User Prediction Form -->
+        <div class="card">
+            <span class="bat-icon">🏏</span>
+            <h2 style="color: var(--g-blue); margin-top: 0;">Cast Your Prediction</h2>
+            <input type="text" id="username" placeholder="Enter Your Name" required>
             
-            <div class="charts-row">
-                <div class="chart-wrapper">
-                    <canvas id="winProbChart"></canvas>
-                </div>
-                <div class="chart-wrapper">
-                    <canvas id="scoreChart"></canvas>
-                </div>
+            <label>🏏 Who wins the match?</label>
+            <select id="predWinner">
+                <option value="India">India</option>
+                <option value="England">England</option>
+            </select>
+
+            <label>🔥 Player of the Match</label>
+            <select id="predMotm">
+                <optgroup label="India">
+                    {% for p in squads['India'] %}<option value="{{p}}">{{p}}</option>{% endfor %}
+                </optgroup>
+                <optgroup label="England">
+                    {% for p in squads['England'] %}<option value="{{p}}">{{p}}</option>{% endfor %}
+                </optgroup>
+            </select>
+
+            <label>💥 Most Runs</label>
+            <select id="predRuns">
+                <optgroup label="India">
+                    {% for p in squads['India'] %}<option value="{{p}}">{{p}}</option>{% endfor %}
+                </optgroup>
+                <optgroup label="England">
+                    {% for p in squads['England'] %}<option value="{{p}}">{{p}}</option>{% endfor %}
+                </optgroup>
+            </select>
+
+            <label>🎯 Most Wickets</label>
+            <select id="predWickets">
+                <optgroup label="India">
+                    {% for p in squads['India'] %}<option value="{{p}}">{{p}}</option>{% endfor %}
+                </optgroup>
+                <optgroup label="England">
+                    {% for p in squads['England'] %}<option value="{{p}}">{{p}}</option>{% endfor %}
+                </optgroup>
+            </select>
+
+            <label>👐 Most Catches</label>
+            <select id="predCatches">
+                <optgroup label="India">
+                    {% for p in squads['India'] %}<option value="{{p}}">{{p}}</option>{% endfor %}
+                </optgroup>
+                <optgroup label="England">
+                    {% for p in squads['England'] %}<option value="{{p}}">{{p}}</option>{% endfor %}
+                </optgroup>
+            </select>
+
+            <button onclick="submitPrediction()">Submit Prediction</button>
+        </div>
+
+        <!-- AI Charts -->
+        <div class="card">
+            <h2 style="color: var(--g-red); margin-top: 0;">🤖 Gemini AI Predictions</h2>
+            <p style="font-size: 0.9em; color: #666;">Updates every 5 minutes utilizing historical data & live scores.</p>
+            
+            <div style="width: 100%; height: 200px;">
+                <canvas id="winProbChart"></canvas>
+            </div>
+            <hr style="border:0; border-top:1px solid #ddd; margin: 20px 0;">
+            <div style="width: 100%; height: 200px;">
+                <canvas id="scoreChart"></canvas>
             </div>
         </div>
 
-        <!-- User Predictions Charts Card (NEW) -->
-        <div class="card friends-card">
-            <h2>📊 Friends' Consensus</h2>
-            <p style="font-size: 0.85rem; color: #666; margin-top:0;">Aggregated data from your group's predictions</p>
-            <div class="charts-row">
-                <div class="chart-wrapper">
-                    <canvas id="userWinChart"></canvas>
-                </div>
-                <div class="chart-wrapper">
-                    <canvas id="userScoreChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Form Card -->
-        <div class="card">
-            <h2>🏏 Make Your Prediction</h2>
-            <form id="predictionForm">
-                <div class="form-group">
-                    <input type="text" id="p_name" placeholder="Your Name (e.g., Rahul)" required>
-                </div>
-                <div class="form-group">
-                    <select id="p_winner" required>
-                        <option value="" disabled selected>Who will win?</option>
-                        <option value="India">India</option>
-                        <option value="England">England</option>
-                    </select>
-                </div>
-                <div class="charts-row" style="gap: 10px;">
-                    <input type="number" id="p_ind_score" placeholder="IND Score" required>
-                    <input type="number" id="p_eng_score" placeholder="ENG Score" required>
-                </div>
-                <button type="submit" id="submitBtn">Hit for Six! (Submit)</button>
-            </form>
-            <div id="form-message" style="color: var(--grass-green); font-weight: bold; margin-top: 10px; text-align: center;"></div>
-        </div>
-
-        <!-- Leaderboard Card -->
-        <div class="card">
-            <h2>👥 Leaderboard</h2>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Player</th>
-                            <th>Winner</th>
-                            <th>IND</th>
-                            <th>ENG</th>
-                        </tr>
-                    </thead>
-                    <tbody id="friends-table-body">
-                        <tr><td colspan="4" style="text-align: center;">No predictions yet!</td></tr>
-                    </tbody>
-                </table>
+        <!-- Crowd Statistics with Player Names visible -->
+        <div class="card" style="grid-column: 1 / -1;">
+            <h2 style="color: var(--g-green); margin-top: 0;">👥 Friend's Consensus & Votes</h2>
+            <p style="font-size: 0.9em; color: #666; margin-bottom: 20px;">See exactly who voted for which player to determine the ultimate winner.</p>
+            <div id="leaderboardStats" style="display: flex; flex-wrap: wrap; gap: 20px;">
+                <!-- Filled dynamically via JS -->
             </div>
         </div>
 
     </div>
 
+    <!-- Animations -->
+    <div class="cricket-ball"></div>
+    <div class="grass"></div>
+
     <script>
-        // Chart Instances
-        let charts = { aiWin: null, aiScore: null, userWin: null, userScore: null };
-        let aiCountdown = 0;
+        // Charts Initialization
+        const winProbCtx = document.getElementById('winProbChart').getContext('2d');
+        const scoreCtx = document.getElementById('scoreChart').getContext('2d');
 
-        // Colors
-        const colInd = '#1E88E5'; // India Blue
-        const colEng = '#E53935'; // England Red
-
-        // Common Chart Options to strictly prevent overflowing
-        const chartOptions = (title) => ({
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'bottom', labels: { boxWidth: 12, font: {size: 10} } },
-                title: { display: true, text: title, font: {size: 12} }
+        const winChart = new Chart(winProbCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['India', 'England'],
+                datasets: [{
+                    data: [50, 50],
+                    backgroundColor: ['#4285F4', '#EA4335'],
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { title: { display: true, text: 'AI Win Probability %' } }
             }
         });
 
-        // Fetch Live Match Data for Header
-        async function fetchMatchData() {
-            try {
-                const res = await fetch('/api/match-data');
-                const data = await res.json();
-                
-                let html = `<p class="live-status">${data.status}</p>`;
-                if (data.score && data.score.length > 0) {
-                    let scoreLine = data.score.map(inn => `${inn.inning.split(' ')[0]}: ${inn.r}/${inn.w}`).join(' &nbsp;|&nbsp; ');
-                    html += `<p class="score-text">${scoreLine}</p>`;
-                } else {
-                    html += `<p class="score-text">Match not started</p>`;
-                }
-                
-                if (data.isMock) {
-                    html += `<p style="color:#ffcc00; font-size: 0.75rem; margin-top:2px;">(Simulated Pre-Match Data)</p>`;
-                }
-                
-                document.getElementById('live-match-container').innerHTML = html;
-            } catch (err) {
-                console.error(err);
+        const scoreChart = new Chart(scoreCtx, {
+            type: 'bar',
+            data: {
+                labels: ['India', 'England'],
+                datasets: [{
+                    label: 'Projected Score',
+                    data: [0, 0],
+                    backgroundColor: ['#FBBC05', '#34A853']
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { y: { beginAtZero: false, min: 100 } }
             }
+        });
+
+        // Fetch Live Matches
+        async function fetchLiveScore() {
+            try {
+                const res = await fetch('/api/live_match');
+                const data = await res.json();
+                document.getElementById('matchName').innerText = data.name;
+                document.getElementById('matchStatus').innerText = data.status;
+                
+                if (data.score && data.score.length > 0) {
+                    let scoreHtml = "";
+                    data.score.forEach(s => {
+                        scoreHtml += `${s.inning}: ${s.r}/${s.w} (${s.o} Overs)<br>`;
+                    });
+                    document.getElementById('matchScore').innerHTML = scoreHtml;
+                }
+            } catch (err) { console.error('Score fetch failed', err); }
         }
 
         // Fetch AI Predictions
         async function fetchAIPredictions() {
             try {
-                const res = await fetch('/api/ai-predictions');
-                const payload = await res.json();
-                const data = payload.predictions;
+                const res = await fetch('/api/ai_predictions');
+                const aiData = await res.json();
                 
-                aiCountdown = payload.next_update_in_seconds;
-                document.getElementById('ai-analysis').innerText = `"${data.analysis_summary}"`;
+                winChart.data.datasets[0].data = [aiData.ind_win_prob || 50, aiData.eng_win_prob || 50];
+                winChart.update();
 
-                // AI Win Prob Doughnut
-                const ctxWin = document.getElementById('winProbChart').getContext('2d');
-                if(charts.aiWin) charts.aiWin.destroy();
-                charts.aiWin = new Chart(ctxWin, {
-                    type: 'doughnut',
-                    data: { labels: ['India', 'England'], datasets: [{ data: [data.win_probability_india, data.win_probability_england], backgroundColor: [colInd, colEng] }] },
-                    options: chartOptions('Win Probability (%)')
-                });
-
-                // AI Score Bar
-                const ctxScore = document.getElementById('scoreChart').getContext('2d');
-                if(charts.aiScore) charts.aiScore.destroy();
-                charts.aiScore = new Chart(ctxScore, {
-                    type: 'bar',
-                    data: { labels: ['India', 'England'], datasets: [{ label: 'Score', data: [data.projected_score_india, data.projected_score_england], backgroundColor: [colInd, colEng] }] },
-                    options: chartOptions('Projected Score')
-                });
-            } catch (err) { console.error(err); }
+                scoreChart.data.datasets[0].data = [aiData.ind_projected_score || 0, aiData.eng_projected_score || 0];
+                scoreChart.update();
+            } catch (err) { console.error('AI logic failed', err); }
         }
 
-        // Timer
-        setInterval(() => {
-            if (aiCountdown > 0) {
-                aiCountdown--;
-                document.getElementById('ai-timer').innerText = `Refreshes in ${aiCountdown}s`;
-                if(aiCountdown === 0) fetchAIPredictions();
-            }
-        }, 1000);
-
-        // Fetch & Process Friends Predictions
-        async function fetchFriendsPredictions() {
+        // Fetch Leaderboard (Updated to show names)
+        async function fetchLeaderboard() {
             try {
-                const res = await fetch('/api/predictions');
+                const res = await fetch('/api/leaderboard');
                 const data = await res.json();
-                
-                const tbody = document.getElementById('friends-table-body');
-                
-                if(data.length === 0) return; // leave default empty state
-                
-                tbody.innerHTML = '';
-                
-                let indVotes = 0, engVotes = 0;
-                let totalIndScore = 0, totalEngScore = 0;
+                const container = document.getElementById('leaderboardStats');
+                container.innerHTML = "";
 
-                data.forEach(p => {
-                    // Populate Table
-                    tbody.innerHTML += `<tr>
-                        <td><b>${p.name}</b></td>
-                        <td>${p.predicted_winner}</td>
-                        <td>${p.predicted_ind_score}</td>
-                        <td>${p.predicted_eng_score}</td>
-                    </tr>`;
+                const titles = {
+                    winner: "Match Winner", motm: "Player of the Match", 
+                    most_runs: "Top Run Scorer", most_wickets: "Top Wicket Taker", most_catches: "Most Catches"
+                };
 
-                    // Calculate Data for User Graphs
-                    if(p.predicted_winner === "India") indVotes++; else engVotes++;
-                    totalIndScore += parseInt(p.predicted_ind_score) || 0;
-                    totalEngScore += parseInt(p.predicted_eng_score) || 0;
-                });
+                for(let cat in data.statistics) {
+                    const stats = data.statistics[cat];
+                    // Sort options by vote count highest to lowest
+                    const keys = Object.keys(stats).sort((a,b) => stats[b].count - stats[a].count); 
+                    if (keys.length === 0) continue;
 
-                // Render User Charts
-                renderUserCharts(indVotes, engVotes, totalIndScore, totalEngScore, data.length);
+                    let html = `<div class="category-box">
+                                    <h3 style="margin-top:0; color: #333; font-size: 1.2em;">${titles[cat]}</h3>`;
+                    
+                    let totalVotes = Object.values(stats).reduce((sum, item) => sum + item.count, 0);
 
-            } catch(err) { console.error(err); }
+                    keys.forEach(k => {
+                        let count = stats[k].count;
+                        let votersStr = stats[k].voters.join(', ');
+                        let pct = Math.round((count / totalVotes) * 100);
+                        
+                        html += `
+                        <div class="prediction-item">
+                            <div style="display:flex; justify-content: space-between; font-size: 1em; font-weight: 500; margin-bottom: 5px;">
+                                <span>${k}</span> 
+                                <span style="color: var(--g-blue);">${count} vote${count > 1 ? 's' : ''}</span>
+                            </div>
+                            <div class="stat-bar">
+                                <div class="stat-fill" style="width: ${pct}%"></div>
+                            </div>
+                            <div style="font-size: 0.85em; color: #555; margin-top: 8px; font-style: italic;">
+                                🧑‍🤝‍🧑 <b>Voted by:</b> ${votersStr}
+                            </div>
+                        </div>`;
+                    });
+                    html += `</div>`;
+                    container.innerHTML += html;
+                }
+
+                if(container.innerHTML === "") {
+                    container.innerHTML = "<p>No predictions yet! Cast the first prediction above!</p>";
+                }
+
+            } catch (err) { console.error('Leaderboard fetch failed', err); }
         }
 
-        function renderUserCharts(indV, engV, totIndS, totEngS, count) {
-            // User Win Votes Pie Chart
-            const ctxUWin = document.getElementById('userWinChart').getContext('2d');
-            if(charts.userWin) charts.userWin.destroy();
-            charts.userWin = new Chart(ctxUWin, {
-                type: 'pie',
-                data: { labels: ['India', 'England'], datasets: [{ data: [indV, engV], backgroundColor: [colInd, colEng] }] },
-                options: chartOptions(`Group Votes (${count} total)`)
-            });
-
-            // User Avg Score Bar Chart
-            const avgInd = count > 0 ? Math.round(totIndS / count) : 0;
-            const avgEng = count > 0 ? Math.round(totEngS / count) : 0;
-            
-            const ctxUScore = document.getElementById('userScoreChart').getContext('2d');
-            if(charts.userScore) charts.userScore.destroy();
-            charts.userScore = new Chart(ctxUScore, {
-                type: 'bar',
-                data: { labels: ['India', 'England'], datasets: [{ label: 'Avg Score', data: [avgInd, avgEng], backgroundColor: [colInd, colEng] }] },
-                options: chartOptions('Group Avg Score')
-            });
-        }
-
-        // Form Submission
-        document.getElementById('predictionForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('submitBtn');
-            btn.classList.add('bat-swing');
-            btn.innerText = "Shot! 🏏";
-
+        // Submit User Prediction
+        async function submitPrediction() {
             const payload = {
-                name: document.getElementById('p_name').value,
-                predicted_winner: document.getElementById('p_winner').value,
-                predicted_ind_score: document.getElementById('p_ind_score').value,
-                predicted_eng_score: document.getElementById('p_eng_score').value
+                username: document.getElementById('username').value,
+                winner: document.getElementById('predWinner').value,
+                motm: document.getElementById('predMotm').value,
+                most_runs: document.getElementById('predRuns').value,
+                most_wickets: document.getElementById('predWickets').value,
+                most_catches: document.getElementById('predCatches').value
             };
 
-            await fetch('/api/predictions', {
+            if (!payload.username) {
+                alert("Please enter your name before submitting!");
+                return;
+            }
+
+            const btn = document.querySelector('button');
+            btn.innerText = "Saving...";
+            
+            await fetch('/api/predict', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
-            document.getElementById('form-message').innerText = "Awesome! Prediction Added.";
-            setTimeout(() => {
-                document.getElementById('form-message').innerText = "";
-                btn.classList.remove('bat-swing');
-                btn.innerText = "Hit for Six! (Submit)";
-            }, 2000);
-            
-            document.getElementById('predictionForm').reset();
-            fetchFriendsPredictions();
-        });
+            btn.style.backgroundColor = 'var(--g-green)';
+            btn.innerText = "Saved Successfully!";
+            setTimeout(() => { 
+                btn.style.backgroundColor = 'var(--g-blue)'; 
+                btn.innerText = "Update Prediction"; 
+            }, 3000);
 
-        // Init
-        fetchMatchData();
+            fetchLeaderboard(); // instant refresh
+        }
+
+        // Initialization & Intervals
+        fetchLiveScore();
         fetchAIPredictions();
-        fetchFriendsPredictions();
+        fetchLeaderboard();
 
-        setInterval(fetchMatchData, 30000); // Live score every 30s
-        setInterval(fetchFriendsPredictions, 10000); // Friends predictions every 10s
+        setInterval(fetchLiveScore, 30000);       
+        setInterval(fetchLeaderboard, 15000);     
+        setInterval(fetchAIPredictions, 300000);  
     </script>
 </body>
 </html>
